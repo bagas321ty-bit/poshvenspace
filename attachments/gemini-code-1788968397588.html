@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HVEN Space - Modern F&B POS & Cafe Management System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons CDN -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#FAF6F0',
+              100: '#F4ECE1',
+              200: '#E6D5C3',
+              500: '#A27B5C',
+              600: '#8A6245',
+              700: '#6F4E37',
+              800: '#4F3524',
+              900: '#23180F',
+              950: '#140D07'
+            },
+            charcoal: {
+              800: '#1F242D',
+              850: '#181C24',
+              900: '#12151B',
+              950: '#0B0D11'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { -webkit-tap-highlight-color: transparent; user-select: none; }
+    input, select, textarea { user-select: auto; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 9999px; }
+    @media print {
+      body * { visibility: hidden !important; }
+      #thermal-receipt-modal, #thermal-receipt-modal * { visibility: visible !important; }
+      #thermal-receipt-modal {
+        position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+        background: white !important; display: flex !important; justify-content: center; align-items: flex-start;
+      }
+      #printable-receipt-card { width: 78mm !important; padding: 4mm !important; box-shadow: none !important; border: none !important; color: black !important; background: white !important; }
+    }
+  </style>
+</head>
+<body class="bg-charcoal-950 text-neutral-100 h-screen w-screen overflow-hidden flex flex-row font-sans">
+
+  <!-- COLLAPSIBLE SIDEBAR NAVIGATION -->
+  <aside id="app-sidebar" class="w-64 bg-charcoal-900 border-r border-neutral-800/80 flex flex-col justify-between transition-all duration-300 z-30 shrink-0 select-none">
+    <div class="p-4 border-b border-neutral-800/80 flex items-center justify-between">
+      <div class="flex items-center space-x-3 overflow-hidden">
+        <div class="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center font-black text-amber-400 text-lg shadow-inner shrink-0">
+          H
+        </div>
+        <div class="sidebar-text leading-tight overflow-hidden">
+          <div class="flex items-center space-x-1.5">
+            <span class="font-extrabold text-sm tracking-wide text-white truncate">HVEN SPACE</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="System Online"></span>
+          </div>
+          <p class="text-[11px] text-neutral-400 truncate">Cafe & Experience Hub</p>
+        </div>
+      </div>
+      <button onclick="toggleSidebarCollapse()" class="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition">
+        <i id="sidebar-toggle-icon" class="ph ph-sidebar-simple text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Navigation Menu List -->
+    <nav class="flex-1 overflow-y-auto py-3 px-2 space-y-4">
+      <!-- Group: MAIN -->
+      <div>
+        <div class="sidebar-text px-3 mb-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Main Kasir & Operasional</div>
+        <div class="space-y-1">
+          <button onclick="switchView('pos')" id="nav-pos" class="nav-item active w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white bg-amber-600/20 text-amber-300 border border-amber-500/30 transition">
+            <i class="ph ph-cash-register text-lg shrink-0"></i>
+            <span class="sidebar-text">POS Kasir</span>
+            <span class="sidebar-text ml-auto text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded font-mono">F1</span>
+          </button>
+          <button onclick="switchView('orders')" id="nav-orders" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-receipt text-lg shrink-0"></i>
+            <span class="sidebar-text">Order List</span>
+            <span id="badge-active-orders" class="sidebar-text ml-auto text-[10px] bg-amber-500 text-neutral-950 font-black px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button onclick="switchView('attendance')" id="nav-attendance" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-fingerprint-simple text-lg shrink-0 text-emerald-400"></i>
+            <span class="sidebar-text">Absensi Staf</span>
+          </button>
+          <button onclick="switchView('kitchen')" id="nav-kitchen" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-cooking-pot text-lg shrink-0"></i>
+            <span class="sidebar-text">Kitchen (KDS)</span>
+            <span id="badge-kds-count" class="sidebar-text ml-auto text-[10px] bg-rose-500 text-white font-bold px-1.5 py-0.2 rounded-full">0</span>
+          </button>
+          <button onclick="switchView('sewagedung')" id="nav-sewagedung" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-buildings text-lg shrink-0 text-cyan-400"></i>
+            <span class="sidebar-text">Tarif Sewa Diantara</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Group: MANAGEMENT -->
+      <div>
+        <div class="sidebar-text px-3 mb-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Management & Inventaris</div>
+        <div class="space-y-1">
+          <button onclick="switchView('products')" id="nav-products" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-coffee text-lg shrink-0"></i>
+            <span class="sidebar-text">Produk & Menu</span>
+          </button>
+          <button onclick="switchView('inventory')" id="nav-inventory" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-package text-lg shrink-0"></i>
+            <span class="sidebar-text">Inventory & Resep</span>
+            <span id="badge-low-stock" class="sidebar-text ml-auto text-[10px] bg-rose-950 text-rose-300 border border-rose-800 px-1 rounded hidden">Alert</span>
+          </button>
+          <button onclick="switchView('shift')" id="nav-shift" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-clock-countdown text-lg shrink-0"></i>
+            <span class="sidebar-text">Shift Kasir</span>
+          </button>
+          <button onclick="switchView('insiden')" id="nav-insiden" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-warning-octagon text-lg shrink-0 text-rose-400"></i>
+            <span class="sidebar-text">Log Insiden Kafe</span>
+          </button>
+          <button onclick="switchView('staffmgmt')" id="nav-staffmgmt" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-user-gear text-lg shrink-0 text-cyan-400"></i>
+            <span class="sidebar-text">Akun Staf & Audit Log</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Group: FINANCE & OWNER -->
+      <div>
+        <div class="sidebar-text px-3 mb-1.5 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Finance & Executive (Admin)</div>
+        <div class="space-y-1">
+          <button onclick="switchView('dashman')" id="nav-dashman" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-target text-lg shrink-0 text-amber-400"></i>
+            <span class="sidebar-text">Dashboard Target (60Jt)</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+          <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-chart-line-up text-lg shrink-0"></i>
+            <span class="sidebar-text">Executive Dashboard</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+          <button onclick="switchView('expenses')" id="nav-expenses" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-wallet text-lg shrink-0"></i>
+            <span class="sidebar-text">Buku Kas Keluar</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+          <button onclick="switchView('pemasukan')" id="nav-pemasukan" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-hand-coins text-lg shrink-0 text-emerald-400"></i>
+            <span class="sidebar-text">Log Pemasukan Sewa</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+          <button onclick="switchView('tutupbuku')" id="nav-tutupbuku" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-calendar-check text-lg shrink-0 text-cyan-400"></i>
+            <span class="sidebar-text">Tutup Buku (7-6)</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+          <button onclick="switchView('menuengineering')" id="nav-menuengineering" class="nav-item w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-neutral-400 hover:text-white hover:bg-neutral-800/60 transition">
+            <i class="ph ph-chart-scatter text-lg shrink-0 text-violet-400"></i>
+            <span class="sidebar-text">Menu Engineering</span>
+            <i class="ph ph-lock-key text-xs text-amber-400 ml-auto role-lock-icon"></i>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Bottom User Profile & PIN Switcher -->
+    <div class="p-3 border-t border-neutral-800/80 bg-charcoal-950/60">
+      <div class="flex items-center justify-between p-2 rounded-xl bg-charcoal-900 border border-neutral-800">
+        <div class="flex items-center space-x-2.5 overflow-hidden">
+          <div id="user-avatar" class="w-8 h-8 rounded-lg bg-amber-600 text-white font-black text-xs flex items-center justify-center shrink-0">
+            R
+          </div>
+          <div class="sidebar-text leading-none overflow-hidden">
+            <div id="user-name" class="font-bold text-xs text-white truncate">Randy (Barista)</div>
+            <div id="user-role-badge" class="text-[10px] text-amber-400 font-semibold mt-0.5">Mode Kasir</div>
+          </div>
+        </div>
+        <button onclick="openPinModal()" class="text-neutral-400 hover:text-amber-400 p-1 rounded-lg hover:bg-neutral-800 transition" title="Ganti Otorisasi / Input PIN Admin">
+          <i id="user-lock-icon" class="ph ph-lock text-base"></i>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN WORKSPACE -->
+  <main class="flex-1 flex flex-col h-full overflow-hidden bg-charcoal-950 relative">
+
+    <!-- Top Workspace Bar -->
+    <header class="h-14 bg-charcoal-900 border-b border-neutral-800/80 px-4 flex items-center justify-between shrink-0 z-20">
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2 text-xs font-semibold text-neutral-400">
+          <span id="current-view-title" class="text-white font-bold text-sm tracking-wide">POS Kasir HVEN</span>
+          <span class="text-neutral-600">&bull;</span>
+          <span id="shift-status-pill" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            Shift Aktif (08:00 - 16:00)
+          </span>
+        </div>
+      </div>
+
+      <!-- Right Action Shortcuts -->
+      <div class="flex items-center space-x-2.5 text-xs">
+        <div class="relative hidden sm:block">
+          <i class="ph ph-magnifying-glass absolute left-3 top-2.5 text-neutral-500 text-xs"></i>
+          <input 
+            type="text" 
+            id="global-menu-search" 
+            oninput="handleGlobalSearch(this.value)" 
+            placeholder="Cari menu (F2 / Ctrl+K)..." 
+            class="bg-charcoal-950 text-white pl-8 pr-3 py-1.5 rounded-xl text-xs border border-neutral-800 focus:outline-none focus:border-amber-500 w-48 transition"
+          >
+        </div>
+
+        <button onclick="openNewProductModal()" class="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold flex items-center space-x-1.5 transition">
+          <i class="ph ph-plus-circle text-sm"></i>
+          <span class="hidden md:inline">+ Menu Baru</span>
+        </button>
+
+        <button onclick="openNotificationCenterModal()" class="relative p-2 rounded-xl bg-charcoal-800 hover:bg-neutral-800 text-amber-300 border border-neutral-700 transition" title="Bot Notifikasi Realtime">
+          <i class="ph ph-bell-ringing text-sm"></i>
+          <span id="bot-notif-badge" class="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[9px] font-black text-white flex items-center justify-center">0</span>
+        </button>
+
+        <button onclick="toggleDarkMode()" class="p-2 rounded-xl bg-charcoal-800 hover:bg-neutral-800 text-neutral-300 transition" title="Toggle Tema">
+          <i class="ph ph-moon text-sm"></i>
+        </button>
+
+        <div id="live-clock" class="font-mono text-xs font-bold text-amber-300 bg-charcoal-950 px-2.5 py-1.5 rounded-xl border border-neutral-800">
+          00:00:00
+        </div>
+      </div>
+    </header>
+
+    <!-- VIEWS CONTAINER -->
+    <div class="flex-1 overflow-hidden relative">
+
+      <!-- VIEW 1: POS CASHIER -->
+      <section id="view-pos" class="app-view w-full h-full flex flex-col lg:flex-row overflow-hidden">
+        <!-- Left Side: Catalog -->
+        <div class="w-full lg:w-[68%] xl:w-[72%] h-full flex flex-col bg-charcoal-900 border-r border-neutral-800/80 overflow-hidden">
+          <div class="p-3 bg-charcoal-900/90 border-b border-neutral-800/80 flex flex-wrap items-center justify-between gap-2">
+            <div id="category-pills-container" class="flex items-center space-x-1.5 overflow-x-auto pb-1 max-w-full"></div>
+            <div class="flex items-center space-x-2 text-xs">
+              <label class="flex items-center space-x-1.5 text-neutral-400 cursor-pointer">
+                <input type="checkbox" id="toggle-available-only" onchange="renderPOSCatalog()" class="rounded bg-neutral-800 border-neutral-700 text-amber-500 focus:ring-0">
+                <span class="text-[11px]">Hanya Ready</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-3.5">
+            <div id="pos-catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"></div>
+            <div id="pos-catalog-empty" class="hidden h-64 flex flex-col items-center justify-center text-neutral-500 text-xs">
+              <i class="ph ph-coffee text-4xl mb-2 text-neutral-600"></i>
+              <p>Menu tidak ditemukan untuk kriteria ini.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Side: Order Cart -->
+        <div class="w-full lg:w-[32%] xl:w-[28%] h-full flex flex-col bg-charcoal-950 border-l border-neutral-800/80">
+          <div class="p-3 bg-charcoal-900 border-b border-neutral-800 space-y-2">
+            <div class="grid grid-cols-3 gap-1.5">
+              <button id="btn-type-dinein" onclick="setOrderType('Dine In')" class="py-1.5 text-xs rounded-xl font-bold bg-amber-600 text-neutral-950 shadow transition flex items-center justify-center space-x-1">
+                <i class="ph ph-fork-knife"></i>
+                <span>Dine In</span>
+              </button>
+              <button id="btn-type-takeaway" onclick="setOrderType('Takeaway')" class="py-1.5 text-xs rounded-xl font-medium bg-charcoal-800 text-neutral-300 hover:bg-neutral-700 transition flex items-center justify-center space-x-1">
+                <i class="ph ph-bag"></i>
+                <span>Takeaway</span>
+              </button>
+              <button id="btn-type-delivery" onclick="setOrderType('Delivery')" class="py-1.5 text-xs rounded-xl font-medium bg-charcoal-800 text-neutral-300 hover:bg-neutral-700 transition flex items-center justify-center space-x-1">
+                <i class="ph ph-moped"></i>
+                <span>Delivery</span>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div id="table-select-wrapper" class="bg-charcoal-950 px-2.5 py-1.5 rounded-xl border border-neutral-800 flex items-center space-x-1.5">
+                <span class="text-[10px] text-neutral-500 font-bold uppercase">Meja:</span>
+                <input type="text" id="cart-table-input" value="01" placeholder="01" class="bg-transparent text-xs font-black text-amber-300 focus:outline-none w-full">
+              </div>
+              <div class="col-span-2 bg-charcoal-950 px-2 py-1.5 rounded-xl border border-neutral-800 flex items-center space-x-1.5">
+                <span class="text-[10px] text-neutral-500 font-bold uppercase">Tamu:</span>
+                <input type="text" id="cart-customer-name" placeholder="Nama Customer..." class="bg-transparent text-xs text-white focus:outline-none w-full">
+              </div>
+            </div>
+          </div>
+
+          <div id="cart-items-container" class="flex-1 overflow-y-auto p-3 divide-y divide-neutral-800/60 space-y-2"></div>
+          <div id="cart-empty-placeholder" class="flex-1 flex flex-col items-center justify-center text-neutral-600 text-xs p-4">
+            <i class="ph ph-shopping-bag text-4xl mb-1 text-neutral-700"></i>
+            <span class="font-semibold text-neutral-400">Keranjang masih kosong</span>
+            <span class="text-[10px] text-neutral-600 mt-0.5">Ketuk menu di sebelah kiri untuk menambah</span>
+          </div>
+
+          <div class="p-3.5 bg-charcoal-900 border-t border-neutral-800 space-y-2">
+            <div class="space-y-1 text-xs text-neutral-400">
+              <div class="flex justify-between items-center">
+                <span>Subtotal (<span id="summary-qty">0</span> items)</span>
+                <span id="summary-subtotal" class="font-mono font-semibold text-neutral-200">Rp 0</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px]">
+                <button onclick="promptDiscountModal()" class="text-amber-400 hover:underline flex items-center space-x-1">
+                  <i class="ph ph-tag"></i>
+                  <span id="summary-discount-label">Diskon / Promo</span>
+                </button>
+                <span id="summary-discount-val" class="font-mono text-emerald-400">-Rp 0</span>
+              </div>
+              <div class="flex justify-between items-center text-[11px]">
+                <span>Pajak Restoran PB1 (10%)</span>
+                <span id="summary-tax-val" class="font-mono text-neutral-300">Rp 0</span>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-neutral-800 flex justify-between items-baseline">
+              <span class="text-xs font-bold text-neutral-400 uppercase tracking-wider">TOTAL TAGIHAN</span>
+              <span id="summary-grandtotal" class="text-xl font-black text-amber-400 font-mono tracking-tight">Rp 0</span>
+            </div>
+
+            <div class="grid grid-cols-5 gap-2 pt-1">
+              <button onclick="clearCart()" class="col-span-1 py-3 rounded-xl bg-charcoal-800 hover:bg-neutral-700 text-rose-400 border border-neutral-700 text-xs font-bold flex items-center justify-center active:scale-95 transition" title="Kosongkan Cart">
+                <i class="ph ph-trash text-base"></i>
+              </button>
+              <button id="btn-charge" onclick="openPaymentModal()" disabled class="col-span-4 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-30 disabled:cursor-not-allowed text-neutral-950 font-black text-sm shadow-xl flex items-center justify-center space-x-2 active:scale-95 transition">
+                <i class="ph ph-wallet text-base"></i>
+                <span id="btn-charge-text">CHARGE Rp 0</span>
+                <span class="text-[10px] bg-neutral-950/20 px-1.5 py-0.5 rounded font-mono font-bold">F4</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: DASHBOARD TARGET MANAGER (RP 60 JUTA) -->
+      <section id="view-dashman" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <div class="bg-charcoal-900 p-3.5 rounded-2xl border border-neutral-800">
+            <span class="text-[10px] text-neutral-400 font-bold uppercase">Target Bulanan</span>
+            <div class="text-xl font-black text-amber-400 font-mono mt-1">Rp 60.000.000</div>
+            <span class="text-[10px] text-neutral-500">Target Toko Bulanan</span>
+          </div>
+          <div class="bg-charcoal-900 p-3.5 rounded-2xl border border-neutral-800">
+            <span class="text-[10px] text-neutral-400 font-bold uppercase">Realisasi Omzet (MTD)</span>
+            <div class="text-xl font-black text-emerald-400 font-mono mt-1">Rp 5.602.500</div>
+            <span class="text-[10px] text-neutral-500">Siklus Cut-Off 7-6</span>
+          </div>
+          <div class="bg-charcoal-900 p-3.5 rounded-2xl border border-neutral-800">
+            <span class="text-[10px] text-neutral-400 font-bold uppercase">% Capaian Target</span>
+            <div class="text-xl font-black text-blue-400 font-mono mt-1">9.34%</div>
+            <div class="w-full bg-charcoal-950 h-1.5 rounded-full mt-1.5 overflow-hidden">
+              <div class="bg-blue-500 h-full w-[9.34%]"></div>
+            </div>
+          </div>
+          <div class="bg-charcoal-900 p-3.5 rounded-2xl border border-neutral-800">
+            <span class="text-[10px] text-neutral-400 font-bold uppercase">Sisa Target</span>
+            <div class="text-xl font-black text-rose-400 font-mono mt-1">Rp 54.397.500</div>
+            <span class="text-[10px] text-rose-400/80 font-bold">Kekurangan Toko</span>
+          </div>
+          <div class="bg-charcoal-900 p-3.5 rounded-2xl border border-neutral-800">
+            <span class="text-[10px] text-neutral-400 font-bold uppercase">Total Porsi / Cup</span>
+            <div class="text-xl font-black text-white font-mono mt-1">480 Cup</div>
+            <span class="text-[10px] text-neutral-500">Volume Terjual MTD</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-amber-500/30">
+            <div class="flex items-center justify-between pb-2 mb-3 border-b border-neutral-800">
+              <h3 class="font-extrabold text-sm text-amber-300 flex items-center space-x-2">
+                <i class="ph ph-star text-amber-400"></i>
+                <span>Misi Upselling Kasir Hari Ini (⭐ STAR)</span>
+              </h3>
+              <span class="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">Margin Tinggi • Laris</span>
+            </div>
+            <div class="space-y-2 text-xs font-mono">
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Teh Puncak Jamus</span><span class="text-emerald-400 font-bold">Margin: 98.2%</span></div>
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Teh Belanda</span><span class="text-emerald-400 font-bold">Margin: 97.4%</span></div>
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Sweety Hazy</span><span class="text-emerald-400 font-bold">Margin: 83.5%</span></div>
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Pure Chocolade</span><span class="text-emerald-400 font-bold">Margin: 82.1%</span></div>
+            </div>
+          </div>
+
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-blue-500/30">
+            <div class="flex items-center justify-between pb-2 mb-3 border-b border-neutral-800">
+              <h3 class="font-extrabold text-sm text-blue-300 flex items-center space-x-2">
+                <i class="ph ph-scales text-blue-400"></i>
+                <span>Menu Pantauan Takaran (🐎 WORKHORSE)</span>
+              </h3>
+              <span class="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-bold">Margin Tipis • Laris</span>
+            </div>
+            <div class="space-y-2 text-xs font-mono">
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Sexy Lady</span><span class="text-blue-400 font-sans text-[11px]">Sirup Konsentrat Sesuai SOP</span></div>
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Nasi Goreng Kara</span><span class="text-blue-400 font-sans text-[11px]">Kontrol Porsi Beras & Telur</span></div>
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Latte Ice</span><span class="text-blue-400 font-sans text-[11px]">Susu Segar Diamond 180 ml</span></div>
+              <div class="p-2.5 bg-charcoal-950 rounded-xl flex justify-between items-center border border-neutral-800"><span class="text-white font-bold">Americano</span><span class="text-blue-400 font-sans text-[11px]">Dosing Espresso 18g</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: LOG PEMASUKAN NON-KASIR (SEWA GEDUNG) -->
+      <section id="view-pemasukan" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-hand-coins text-emerald-400 text-xl"></i>
+              <span>Buku Log Pemasukan Non-Kasir (Sewa Tempat & Acara)</span>
+            </h2>
+            <p class="text-xs text-neutral-400 mt-0.5">Catatan DP acara, reservasi Diantara space, dan pelunasan institusi.</p>
+          </div>
+          <button onclick="openNewIncomeModal()" class="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-400 text-neutral-950 font-black rounded-xl text-xs flex items-center space-x-1.5 shadow">
+            <i class="ph ph-plus-bold"></i>
+            <span>+ Catat Pemasukan Baru</span>
+          </button>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <table class="w-full text-left text-xs">
+            <thead class="text-[11px] text-neutral-400 bg-charcoal-950 uppercase tracking-wider border-b border-neutral-800">
+              <tr>
+                <th class="p-3">Tanggal</th>
+                <th class="p-3">Kategori</th>
+                <th class="p-3">Keterangan / Klien</th>
+                <th class="p-3 text-right">Nominal (Rp)</th>
+                <th class="p-3 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody id="pemasukan-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- VIEW: TARIF SEWA GEDUNG DIANTARA -->
+      <section id="view-sewagedung" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800">
+          <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+            <i class="ph ph-buildings text-cyan-400 text-xl"></i>
+            <span>Pricelist & Regulasi Sewa Gedung Diantara</span>
+          </h2>
+          <p class="text-xs text-neutral-400 mt-0.5">Ketentuan sewa gedung untuk kebutuhan acara, seminar, dan workshop.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <h3 class="font-extrabold text-white text-sm">PAKET 2 JAM STANDAR</h3>
+              <span class="text-amber-400 font-mono font-black text-base">Rp 200.000</span>
+            </div>
+            <ul class="text-xs text-neutral-300 space-y-1.5 pt-2">
+              <li class="flex items-center space-x-2"><i class="ph ph-check text-emerald-400"></i><span>Tanpa Meja dan Kursi (Ruang Lepas)</span></li>
+              <li class="flex items-center space-x-2"><i class="ph ph-check text-emerald-400"></i><span>Listrik untuk AC & Lampu terpasang</span></li>
+            </ul>
+          </div>
+
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 space-y-2">
+            <div class="flex justify-between items-center">
+              <h3 class="font-extrabold text-white text-sm">PAKET 2 JAM LENGKAP</h3>
+              <span class="text-amber-400 font-mono font-black text-base">Rp 300.000</span>
+            </div>
+            <ul class="text-xs text-neutral-300 space-y-1.5 pt-2">
+              <li class="flex items-center space-x-2"><i class="ph ph-check text-emerald-400"></i><span>Termasuk 8 Meja dan 25 Kursi (Maksimal)</span></li>
+              <li class="flex items-center space-x-2"><i class="ph ph-check text-emerald-400"></i><span>Listrik untuk AC & Lampu terpasang</span></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: MANAJEMEN AKUN KARYAWAN & AUDIT LOG -->
+      <section id="view-staffmgmt" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-user-gear text-cyan-400 text-2xl"></i>
+              <span>Manajemen Akun Karyawan & Hak Akses Admin</span>
+            </h2>
+            <p class="text-xs text-neutral-400 mt-0.5">Ubah password/PIN admin, buat akun staf baru, dan pantau log audit pembuatan akun secara permanen.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openChangeAdminPinModal()" class="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition">
+              <i class="ph ph-key"></i>
+              <span>Ubah PIN Admin</span>
+            </button>
+            <button onclick="openCreateStaffModal()" class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-neutral-950 font-black rounded-xl text-xs flex items-center space-x-1.5 shadow transition">
+              <i class="ph ph-user-plus"></i>
+              <span>+ Buat Akun Karyawan</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div class="lg:col-span-7 bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+            <div class="p-3 bg-charcoal-950 border-b border-neutral-800 flex items-center justify-between">
+              <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <i class="ph ph-users text-cyan-400"></i>
+                <span>Daftar Akun Terdaftar (Master Karyawan)</span>
+              </span>
+              <span id="staff-count-badge" class="text-[10px] bg-charcoal-900 border border-neutral-800 text-neutral-300 px-2 py-0.5 rounded font-mono">7 Akun</span>
+            </div>
+            <div class="overflow-x-auto max-h-[460px]">
+              <table class="w-full text-left text-xs">
+                <thead class="text-[11px] text-neutral-400 bg-charcoal-950 uppercase tracking-wider border-b border-neutral-800 sticky top-0">
+                  <tr>
+                    <th class="p-3">Nama Staf</th>
+                    <th class="p-3">ID Karyawan</th>
+                    <th class="p-3">Role / Posisi</th>
+                    <th class="p-3 text-center">PIN</th>
+                    <th class="p-3 text-center">Status</th>
+                    <th class="p-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="staff-mgmt-tbody" class="divide-y divide-neutral-800 font-mono"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow flex flex-col">
+            <div class="p-3 bg-charcoal-950 border-b border-neutral-800 flex items-center justify-between">
+              <span class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                <i class="ph ph-shield-check text-emerald-400"></i>
+                <span>Audit Log Pembuatan Akun</span>
+              </span>
+              <span class="text-[10px] text-neutral-400 font-mono">Permanent Audit Trail</span>
+            </div>
+            <div id="account-audit-logs" class="p-3 overflow-y-auto max-h-[460px] space-y-2.5 bg-charcoal-950/60 flex-1"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: PRODUCT & PRICE MANAGEMENT -->
+      <section id="view-products" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-coffee text-amber-400 text-xl"></i>
+              <span>Manajemen Produk, Harga & Add-ons</span>
+            </h2>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openManageAddonsModal()" class="px-3 py-2 bg-charcoal-800 hover:bg-neutral-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition">
+              <i class="ph ph-faders"></i>
+              <span>Kelola Add-ons</span>
+            </button>
+            <input type="text" id="product-table-search" oninput="renderProductManagementTable()" placeholder="Cari menu / SKU..." class="bg-charcoal-950 text-white px-3 py-1.5 rounded-xl text-xs border border-neutral-700 focus:outline-none focus:border-amber-500">
+            <button onclick="openNewProductModal()" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-black rounded-xl text-xs flex items-center space-x-1.5 shadow transition">+ Menu Baru</button>
+          </div>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto max-h-[calc(100vh-220px)]">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950 sticky top-0 uppercase tracking-wider border-b border-neutral-800">
+                <tr>
+                  <th class="p-3">Produk</th>
+                  <th class="p-3">Kategori</th>
+                  <th class="p-3 text-right">Harga Jual (Rp)</th>
+                  <th class="p-3 text-right">HPP / COGS (Rp)</th>
+                  <th class="p-3 text-right">Laba / Margin</th>
+                  <th class="p-3 text-center">Stok</th>
+                  <th class="p-3 text-center">Status</th>
+                  <th class="p-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="product-management-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: ATTENDANCE -->
+      <section id="view-attendance" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-fingerprint-simple text-emerald-400 text-2xl"></i>
+              <span>Presensi Absensi Karyawan (Sistem Anti-Curang)</span>
+            </h2>
+          </div>
+          <button onclick="openAttendanceModal()" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-neutral-950 font-black rounded-xl text-xs flex items-center space-x-2 shadow-lg transition active:scale-95">
+            <i class="ph ph-camera text-base"></i>
+            <span>Clock In / Clock Out Sekarang</span>
+          </button>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950/80 uppercase tracking-wider border-b border-neutral-800">
+                <tr>
+                  <th class="p-3">Bukti Foto</th>
+                  <th class="p-3">Nama Karyawan</th>
+                  <th class="p-3">Tanggal & Shift</th>
+                  <th class="p-3">Clock In</th>
+                  <th class="p-3">Clock Out</th>
+                  <th class="p-3">Status Masuk</th>
+                  <th class="p-3">Catatan / Posisi</th>
+                  <th class="p-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="attendance-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: KITCHEN (KDS) -->
+      <section id="view-kitchen" class="app-view hidden w-full h-full overflow-hidden p-4 flex flex-col space-y-3">
+        <div class="flex items-center justify-between bg-charcoal-900 px-4 py-2.5 rounded-2xl border border-neutral-800 shrink-0">
+          <div class="flex items-center space-x-2">
+            <i class="ph ph-cooking-pot text-amber-400 text-xl"></i>
+            <h2 class="text-sm font-extrabold text-white">Kitchen Order Tickets (KDS Kanban)</h2>
+          </div>
+          <div class="text-xs text-neutral-400">Tiket otomatis muncul saat pesanan kasir selesai</div>
+        </div>
+
+        <div class="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3 overflow-hidden">
+          <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 p-3 flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800"><span class="text-xs font-bold text-amber-400">NEW</span><span id="kds-new-count" class="text-[11px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full">0</span></div>
+            <div id="kds-col-new" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+          </div>
+          <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 p-3 flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800"><span class="text-xs font-bold text-blue-400">PREPARING</span><span id="kds-prep-count" class="text-[11px] font-bold bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">0</span></div>
+            <div id="kds-col-prep" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+          </div>
+          <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 p-3 flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800"><span class="text-xs font-bold text-emerald-400">READY</span><span id="kds-ready-count" class="text-[11px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">0</span></div>
+            <div id="kds-col-ready" class="flex-1 overflow-y-auto space-y-2.5 pr-1"></div>
+          </div>
+          <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 p-3 flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800"><span class="text-xs font-bold text-neutral-400">DONE</span><span id="kds-done-count" class="text-[11px] font-bold bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-full">0</span></div>
+            <div id="kds-col-done" class="flex-1 overflow-y-auto space-y-2.5 pr-1 opacity-70"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: INVENTORY & RECIPES -->
+      <section id="view-inventory" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-package text-amber-400 text-xl"></i>
+              <span>Inventaris Bahan Baku & Log Resep Dapur</span>
+            </h2>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openQuickOpnameModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-neutral-950 font-black rounded-xl text-xs flex items-center space-x-1.5 shadow-lg active:scale-95 transition">
+              <i class="ph ph-lightning text-sm"></i>
+              <span>⚡ Opname Kilat</span>
+            </button>
+            <button onclick="toggleInventorySubView('ingredients')" id="subtab-ingredients" class="px-3.5 py-1.5 rounded-xl bg-amber-500 text-neutral-950 font-bold text-xs shadow transition">Bahan Baku</button>
+            <button onclick="toggleInventorySubView('recipelog')" id="subtab-recipelog" class="px-3.5 py-1.5 rounded-xl bg-charcoal-800 text-neutral-400 hover:text-white font-semibold text-xs transition">Log Resep</button>
+            <button onclick="openNewIngredientModal()" class="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-bold rounded-xl text-xs flex items-center space-x-1">+ Bahan</button>
+          </div>
+        </div>
+
+        <div id="panel-inventory-ingredients" class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950 uppercase tracking-wider border-b border-neutral-800">
+                <tr>
+                  <th class="p-3">Nama Bahan</th>
+                  <th class="p-3">SKU</th>
+                  <th class="p-3">Stok Saat Ini</th>
+                  <th class="p-3">Batas Min</th>
+                  <th class="p-3 text-right">Biaya Satuan</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-center">Kelola</th>
+                  <th class="p-3 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="panel-inventory-recipelog" class="hidden bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto max-h-[500px]">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950 uppercase tracking-wider border-b border-neutral-800">
+                <tr>
+                  <th class="p-3">Waktu</th>
+                  <th class="p-3">Order ID</th>
+                  <th class="p-3">Menu Terjual</th>
+                  <th class="p-3">Rincian Terpotong</th>
+                  <th class="p-3">Operator</th>
+                </tr>
+              </thead>
+              <tbody id="recipe-log-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: SHIFT -->
+      <section id="view-shift" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="bg-charcoal-900 p-5 rounded-2xl border border-neutral-800 shadow">
+          <div class="flex items-center justify-between pb-3 border-b border-neutral-800 mb-4">
+            <div>
+              <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+                <i class="ph ph-clock-countdown text-amber-400 text-xl"></i>
+                <span>Manajemen Shift Kasir</span>
+              </h2>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="bg-charcoal-950 p-3.5 rounded-xl border border-neutral-800">
+              <span class="text-[11px] text-neutral-400">Modal Awal Kasir</span>
+              <div id="shift-opening-cash" class="text-lg font-black text-white font-mono mt-1">Rp 500.000</div>
+            </div>
+            <div class="bg-charcoal-950 p-3.5 rounded-xl border border-neutral-800">
+              <span class="text-[11px] text-neutral-400">Penjualan Tunai</span>
+              <div id="shift-cash-sales" class="text-lg font-black text-emerald-400 font-mono mt-1">Rp 0</div>
+            </div>
+            <div class="bg-charcoal-950 p-3.5 rounded-xl border border-neutral-800">
+              <span class="text-[11px] text-neutral-400">Non-Tunai (QRIS & EDC)</span>
+              <div id="shift-noncash-sales" class="text-lg font-black text-amber-400 font-mono mt-1">Rp 0</div>
+            </div>
+            <div class="bg-charcoal-950 p-3.5 rounded-xl border border-neutral-800">
+              <span class="text-[11px] text-neutral-400">Estimasi Kas Diharapkan</span>
+              <div id="shift-expected-cash" class="text-lg font-black text-blue-400 font-mono mt-1">Rp 500.000</div>
+            </div>
+          </div>
+
+          <div class="mt-6 pt-4 border-t border-neutral-800 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-neutral-300 mb-1">Kas Fisik di Laci</label>
+              <input type="number" id="input-actual-cash" oninput="calculateShiftDifference()" placeholder="0" class="w-full bg-charcoal-950 text-white p-2.5 rounded-xl border border-neutral-700 font-mono text-sm focus:outline-none focus:border-amber-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-neutral-300 mb-1">Selisih Kas</label>
+              <div id="shift-variance-display" class="p-2.5 rounded-xl bg-charcoal-950 border border-neutral-800 font-mono font-black text-sm text-neutral-400">Rp 0 (Pas)</div>
+            </div>
+            <div class="flex items-end">
+              <button onclick="handleCloseShift()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow transition">Tutup Shift & Reset Transaksi</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: ORDERS -->
+      <section id="view-orders" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-receipt text-amber-400 text-xl"></i>
+              <span>Riwayat Transaksi & Order</span>
+            </h2>
+          </div>
+          <button onclick="exportOrdersToCSV()" class="px-3.5 py-2 bg-charcoal-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 rounded-xl text-xs font-semibold flex items-center space-x-1.5">
+            <i class="ph ph-download-simple"></i>
+            <span>Ekspor CSV</span>
+          </button>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950 uppercase tracking-wider border-b border-neutral-800">
+                <tr>
+                  <th class="p-3">Order ID</th>
+                  <th class="p-3">Waktu</th>
+                  <th class="p-3">Tipe / Meja</th>
+                  <th class="p-3">Customer</th>
+                  <th class="p-3">Items</th>
+                  <th class="p-3 text-right">Total Tagihan</th>
+                  <th class="p-3">Metode</th>
+                  <th class="p-3 text-center">Status</th>
+                  <th class="p-3 text-center">Aksi & Struk</th>
+                </tr>
+              </thead>
+              <tbody id="orders-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: EXECUTIVE DASHBOARD -->
+      <section id="view-dashboard" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow relative overflow-hidden">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Total Omzet Penjualan</div>
+            <div id="kpi-omzet" class="text-2xl font-black text-amber-400 mt-1 font-mono">Rp 53.797.500</div>
+          </div>
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow relative overflow-hidden">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Laba Bersih Operasional</div>
+            <div id="kpi-netprofit" class="text-2xl font-black text-emerald-400 mt-1 font-mono">Rp 11.360.945</div>
+          </div>
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow relative overflow-hidden">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Prive Sudah Diambil</div>
+            <div id="kpi-prive-taken" class="text-2xl font-black text-rose-400 mt-1 font-mono">Rp 11.788.100</div>
+          </div>
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow relative overflow-hidden">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-neutral-400">Kuota Prive Aman</div>
+            <div id="kpi-prive-quota" class="text-2xl font-black text-rose-500 mt-1 font-mono">-Rp 427.155</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div class="lg:col-span-7 bg-charcoal-900 rounded-2xl border border-neutral-800 p-4 flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm text-white flex items-center space-x-2">
+                <i class="ph ph-chart-bar text-amber-400"></i>
+                <span>Tren Kinerja Mingguan</span>
+              </h3>
+            </div>
+            <div class="h-64 relative">
+              <canvas id="weeklySalesChart"></canvas>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-charcoal-900 rounded-2xl border border-neutral-800 p-4 space-y-3">
+            <h3 class="font-bold text-sm text-white flex items-center space-x-2 border-b border-neutral-800 pb-2">
+              <i class="ph ph-heartbeat text-amber-400"></i>
+              <span>Rasio Kesehatan Finansial</span>
+            </h3>
+            <div class="space-y-3 text-xs">
+              <div class="p-2.5 rounded-xl bg-charcoal-950 border border-neutral-800 flex justify-between items-center">
+                <div><div class="font-bold text-neutral-200">COGS Ratio</div><div class="text-[10px] text-neutral-500">Benchmark: 28-35%</div></div>
+                <div class="text-right"><div class="font-mono font-black text-emerald-400">28.09%</div><span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-950 text-emerald-300">AMAN</span></div>
+              </div>
+              <div class="p-2.5 rounded-xl bg-charcoal-950 border border-neutral-800 flex justify-between items-center">
+                <div><div class="font-bold text-neutral-200">Labor / Gaji Ratio</div><div class="text-[10px] text-neutral-500">Benchmark: 15-20%</div></div>
+                <div class="text-right"><div class="font-mono font-black text-blue-400">14.04%</div><span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-950 text-blue-300">IDEAL</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: EXPENSES -->
+      <section id="view-expenses" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-wallet text-amber-400 text-xl"></i>
+              <span>Buku Kas Keluar & Pengeluaran Operasional</span>
+            </h2>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300 mb-3 flex items-center space-x-1.5">
+              <i class="ph ph-plus-circle"></i>
+              <span>Catat Pengeluaran Baru</span>
+            </h3>
+            <form onsubmit="handleNewExpenseSubmit(event)" class="space-y-3 text-xs">
+              <div>
+                <label class="block text-neutral-400 mb-1 font-semibold">Tanggal</label>
+                <input type="date" id="exp-date" required class="w-full bg-charcoal-950 border border-neutral-700 p-2 rounded-xl text-white focus:outline-none focus:border-amber-500">
+              </div>
+              <div>
+                <label class="block text-neutral-400 mb-1 font-semibold">Kategori</label>
+                <select id="exp-category" onchange="toggleExpenseInventoryLink(this.value)" class="w-full bg-charcoal-950 border border-neutral-700 p-2 rounded-xl text-white focus:outline-none focus:border-amber-500">
+                  <option value="Bahan Baku">Bahan Baku</option>
+                  <option value="Gaji">Gaji / Payroll</option>
+                  <option value="Operasional">Operasional</option>
+                  <option value="Operasional Sistem">Operasional Sistem</option>
+                  <option value="Pemasaran">Pemasaran</option>
+                  <option value="prive">Penarikan Prive</option>
+                  <option value="sub con">Sub Con</option>
+                  <option value="Lain-lain">Lain-lain</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-neutral-400 mb-1 font-semibold">Keterangan</label>
+                <input type="text" id="exp-desc" required placeholder="Contoh: Susu Diamond 12 Kotak" class="w-full bg-charcoal-950 border border-neutral-700 p-2 rounded-xl text-white focus:outline-none focus:border-amber-500">
+              </div>
+              <div>
+                <label class="block text-neutral-400 mb-1 font-semibold">Nominal (Rp)</label>
+                <input type="number" id="exp-amount" required placeholder="150000" class="w-full bg-charcoal-950 border border-neutral-700 p-2 rounded-xl text-white font-mono focus:outline-none focus:border-amber-500">
+              </div>
+              <button type="submit" class="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold rounded-xl shadow transition">Simpan Pengeluaran</button>
+            </form>
+          </div>
+
+          <div class="lg:col-span-2 bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+            <div class="p-3 bg-charcoal-950 border-b border-neutral-800 flex items-center justify-between">
+              <span class="text-xs font-bold text-white uppercase tracking-wider">Log Pengeluaran Kas Terkini</span>
+            </div>
+            <div class="overflow-x-auto max-h-[440px]">
+              <table class="w-full text-left text-xs">
+                <thead class="text-[11px] text-neutral-400 bg-charcoal-950/80 uppercase tracking-wider border-b border-neutral-800">
+                  <tr>
+                    <th class="p-3">Tanggal</th>
+                    <th class="p-3">Kategori</th>
+                    <th class="p-3">Keterangan</th>
+                    <th class="p-3 text-right">Nominal</th>
+                    <th class="p-3 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="expense-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: TUTUP BUKU -->
+      <section id="view-tutupbuku" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-calendar-check text-cyan-400 text-xl"></i>
+              <span>Laporan Tutup Buku Bulanan (Siklus Cut-Off Tanggal 7 ke 6)</span>
+            </h2>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="exportTutupBukuToExcel()" class="px-3.5 py-2 bg-charcoal-800 hover:bg-neutral-700 text-neutral-200 border border-neutral-700 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition">
+              <i class="ph ph-file-xls text-emerald-400"></i>
+              <span>Ekspor Rekap</span>
+            </button>
+            <button onclick="triggerExecuteTutupBuku()" class="px-3.5 py-2 bg-cyan-600 hover:bg-cyan-500 text-neutral-950 font-black rounded-xl text-xs flex items-center space-x-1.5 shadow transition">
+              <i class="ph ph-lock-key"></i>
+              <span>Kunci Periode</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto max-h-[460px]">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950/80 uppercase tracking-wider border-b border-neutral-800 sticky top-0">
+                <tr>
+                  <th class="p-3">Periode</th>
+                  <th class="p-3">Rentang Tanggal</th>
+                  <th class="p-3 text-right">Pendapatan (Rp)</th>
+                  <th class="p-3 text-right">COGS Bahan (Rp)</th>
+                  <th class="p-3 text-right">Pengeluaran (Rp)</th>
+                  <th class="p-3 text-right">Laba Bersih (Rp)</th>
+                  <th class="p-3 text-center">Status</th>
+                  <th class="p-3 text-center">PIC</th>
+                </tr>
+              </thead>
+              <tbody id="tutup-buku-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: MENU ENGINEERING -->
+      <section id="view-menuengineering" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-chart-scatter text-violet-400 text-xl"></i>
+              <span>Analisis Menu Engineering (Matriks Kasavana & Smith / BCG)</span>
+            </h2>
+          </div>
+          <div class="flex items-center space-x-2 text-xs">
+            <button onclick="filterBCGMatrix('ALL')" class="bcg-filter-btn px-3 py-1.5 rounded-xl bg-violet-600 text-white font-bold transition">Semua</button>
+            <button onclick="filterBCGMatrix('STAR')" class="bcg-filter-btn px-3 py-1.5 rounded-xl bg-charcoal-800 text-neutral-300 hover:text-white transition">⭐ Star</button>
+            <button onclick="filterBCGMatrix('PLOWHORSE')" class="bcg-filter-btn px-3 py-1.5 rounded-xl bg-charcoal-800 text-neutral-300 hover:text-white transition">🐎 Plowhorse</button>
+            <button onclick="filterBCGMatrix('PUZZLE')" class="bcg-filter-btn px-3 py-1.5 rounded-xl bg-charcoal-800 text-neutral-300 hover:text-white transition">🧩 Puzzle</button>
+            <button onclick="filterBCGMatrix('DOG')" class="bcg-filter-btn px-3 py-1.5 rounded-xl bg-charcoal-800 text-neutral-300 hover:text-white transition">🐕 Dog</button>
+          </div>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto max-h-[500px]">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950 uppercase tracking-wider border-b border-neutral-800 sticky top-0">
+                <tr>
+                  <th class="p-3">Nama Menu</th>
+                  <th class="p-3 text-right">Harga Jual</th>
+                  <th class="p-3 text-right">Modal COGS</th>
+                  <th class="p-3 text-right">Margin Laba</th>
+                  <th class="p-3 text-center">Volume Penjualan</th>
+                  <th class="p-3 text-center">Klasifikasi BCG</th>
+                  <th class="p-3">Rekomendasi Taktis</th>
+                </tr>
+              </thead>
+              <tbody id="bcg-matrix-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW: INSIDEN -->
+      <section id="view-insiden" class="app-view hidden w-full h-full overflow-y-auto p-4 lg:p-6 space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 bg-charcoal-900 p-4 rounded-2xl border border-neutral-800 shadow">
+          <div>
+            <h2 class="text-base font-extrabold text-white flex items-center space-x-2">
+              <i class="ph ph-warning-octagon text-rose-400 text-xl"></i>
+              <span>Log Laporan Insiden & Pelanggaran SOP Kafe</span>
+            </h2>
+          </div>
+          <button onclick="openNewIncidentModal()" class="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 shadow transition">
+            <i class="ph ph-plus-circle"></i>
+            <span>+ Catat Insiden Baru</span>
+          </button>
+        </div>
+
+        <div class="bg-charcoal-900 rounded-2xl border border-neutral-800 overflow-hidden shadow">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-[11px] text-neutral-400 bg-charcoal-950/80 uppercase tracking-wider border-b border-neutral-800">
+                <tr>
+                  <th class="p-3">Tanggal</th>
+                  <th class="p-3">Kategori</th>
+                  <th class="p-3">Staf Terlibat</th>
+                  <th class="p-3">Deskripsi Kejadian</th>
+                  <th class="p-3">Tindakan / Sanksi</th>
+                  <th class="p-3 text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="incident-tbody" class="divide-y divide-neutral-800/80 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- MODAL: GANTI PIN ADMIN -->
+  <div id="modal-change-admin-pin" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-charcoal-900 border border-neutral-700 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col text-neutral-100">
+      <div class="p-4 bg-amber-950/80 border-b border-amber-800 flex items-center justify-between">
+        <h3 class="font-extrabold text-sm text-white">Ganti PIN Otorisasi Admin</h3>
+        <button onclick="closeChangeAdminPinModal()" class="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white"><i class="ph ph-x"></i></button>
+      </div>
+      <form onsubmit="handleAdminPinChangeSubmit(event)" class="p-4 space-y-3 text-xs">
+        <div><label class="block text-neutral-300 font-semibold mb-1">PIN Admin Lama</label><input type="password" id="input-old-admin-pin" maxlength="4" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-center font-mono text-base text-white"></div>
+        <div><label class="block text-neutral-300 font-semibold mb-1">PIN Admin Baru (4 Digit)</label><input type="password" id="input-new-admin-pin" maxlength="4" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-center font-mono text-base text-white"></div>
+        <div><label class="block text-neutral-300 font-semibold mb-1">Konfirmasi PIN Baru</label><input type="password" id="input-confirm-admin-pin" maxlength="4" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-center font-mono text-base text-white"></div>
+        <p id="admin-pin-msg" class="text-[11px] text-rose-400 font-semibold min-h-[16px] text-center"></p>
+        <div class="pt-2 flex space-x-2">
+          <button type="button" onclick="closeChangeAdminPinModal()" class="flex-1 py-2.5 bg-neutral-800 text-neutral-300 rounded-xl">Batal</button>
+          <button type="submit" class="flex-1 py-2.5 bg-amber-500 text-neutral-950 font-black rounded-xl">Simpan PIN</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BUAT / EDIT STAF -->
+  <div id="modal-staff-form" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-charcoal-900 border border-neutral-700 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col text-neutral-100">
+      <div class="p-4 bg-cyan-950/80 border-b border-cyan-800 flex items-center justify-between">
+        <h3 id="staff-modal-title" class="font-extrabold text-sm text-white">Buat Akun Karyawan Baru</h3>
+        <button onclick="closeStaffModal()" class="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white"><i class="ph ph-x"></i></button>
+      </div>
+      <form onsubmit="handleStaffFormSubmit(event)" class="p-4 space-y-3 text-xs">
+        <input type="hidden" id="staff-form-mode" value="create">
+        <input type="hidden" id="staff-form-id">
+        <div><label class="block text-neutral-300 font-semibold mb-1">Nama Lengkap</label><input type="text" id="staff-form-name" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white"></div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div><label class="block text-neutral-300 font-semibold mb-1">ID (Username)</label><input type="text" id="staff-form-uid" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white font-mono lowercase"></div>
+          <div><label class="block text-neutral-300 font-semibold mb-1">Role</label><select id="staff-form-role" class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white"><option value="Barista">Barista</option><option value="Cashier">Cashier</option><option value="Kitchen Head">Kitchen Head</option><option value="Floor & Operations">Floor & Operations</option></select></div>
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div><label class="block text-neutral-300 font-semibold mb-1">PIN (4 Digit)</label><input type="password" id="staff-form-pin" maxlength="4" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-center font-mono text-base text-white"></div>
+          <div><label class="block text-neutral-300 font-semibold mb-1">Akses</label><select id="staff-form-access" class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white"><option value="Kasir Only">Kasir Only</option><option value="Full Admin">Full Admin</option></select></div>
+        </div>
+        <div class="pt-2 flex space-x-2">
+          <button type="button" onclick="closeStaffModal()" class="flex-1 py-2.5 bg-neutral-800 text-neutral-300 rounded-xl">Batal</button>
+          <button type="submit" class="flex-1 py-2.5 bg-cyan-600 text-neutral-950 font-black rounded-xl">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PEMASUKAN BARU -->
+  <div id="modal-income-form" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-charcoal-900 border border-neutral-700 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col text-neutral-100">
+      <div class="p-4 bg-emerald-950/80 border-b border-emerald-800 flex items-center justify-between">
+        <h3 class="font-extrabold text-sm text-white">Catat Pemasukan Non-Kasir</h3>
+        <button onclick="closeNewIncomeModal()" class="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white"><i class="ph ph-x"></i></button>
+      </div>
+      <form onsubmit="handleIncomeFormSubmit(event)" class="p-4 space-y-3 text-xs">
+        <div><label class="block text-neutral-400 mb-1 font-semibold">Tanggal</label><input type="date" id="inc-date" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white"></div>
+        <div><label class="block text-neutral-400 mb-1 font-semibold">Kategori</label><select id="inc-cat" class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white"><option value="Sewa Tempat">Sewa Tempat / Gedung</option><option value="Kerjasama Event">Kerjasama Event</option><option value="Lain-lain">Lain-lain</option></select></div>
+        <div><label class="block text-neutral-400 mb-1 font-semibold">Keterangan / Klien</label><input type="text" id="inc-desc" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white"></div>
+        <div><label class="block text-neutral-400 mb-1 font-semibold">Nominal (Rp)</label><input type="number" id="inc-amount" required class="w-full bg-charcoal-950 border border-neutral-700 p-2.5 rounded-xl text-white font-mono"></div>
+        <div class="pt-2 flex space-x-2">
+          <button type="button" onclick="closeNewIncomeModal()" class="flex-1 py-2.5 bg-neutral-800 text-neutral-300 rounded-xl">Batal</button>
+          <button type="submit" class="flex-1 py-2.5 bg-emerald-500 text-neutral-950 font-black rounded-xl">Simpan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PIN AUTHENTICATION -->
+  <div id="modal-pin-auth" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-charcoal-900 border border-neutral-700 rounded-3xl w-full max-w-xs overflow-hidden shadow-2xl flex flex-col text-neutral-100">
+      <div class="p-4 bg-brand-950 border-b border-brand-800 text-center relative">
+        <button onclick="closePinModal()" class="absolute right-3 top-3 w-7 h-7 rounded-full bg-neutral-800/80 flex items-center justify-center text-neutral-400 hover:text-white"><i class="ph ph-x"></i></button>
+        <h3 class="font-extrabold text-sm text-white">Otorisasi Admin / Owner</h3>
+      </div>
+      <div class="p-4 flex flex-col items-center space-y-3.5">
+        <div class="flex items-center space-x-2.5 my-1">
+          <div id="pindot-0" class="w-3.5 h-3.5 rounded-full border-2 border-neutral-600 transition"></div>
+          <div id="pindot-1" class="w-3.5 h-3.5 rounded-full border-2 border-neutral-600 transition"></div>
+          <div id="pindot-2" class="w-3.5 h-3.5 rounded-full border-2 border-neutral-600 transition"></div>
+          <div id="pindot-3" class="w-3.5 h-3.5 rounded-full border-2 border-neutral-600 transition"></div>
+        </div>
+        <p id="pin-error-text" class="text-[11px] font-semibold text-rose-400 min-h-[16px] text-center"></p>
+        <div class="grid grid-cols-3 gap-2 w-full max-w-[220px]">
+          <button type="button" onclick="handlePinInput('1')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">1</button>
+          <button type="button" onclick="handlePinInput('2')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">2</button>
+          <button type="button" onclick="handlePinInput('3')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">3</button>
+          <button type="button" onclick="handlePinInput('4')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">4</button>
+          <button type="button" onclick="handlePinInput('5')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">5</button>
+          <button type="button" onclick="handlePinInput('6')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">6</button>
+          <button type="button" onclick="handlePinInput('7')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">7</button>
+          <button type="button" onclick="handlePinInput('8')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">8</button>
+          <button type="button" onclick="handlePinInput('9')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">9</button>
+          <button type="button" onclick="clearPin()" class="h-11 rounded-xl bg-charcoal-800 text-xs text-neutral-400">C</button>
+          <button type="button" onclick="handlePinInput('0')" class="h-11 rounded-xl bg-charcoal-800 font-bold text-base text-white">0</button>
+          <button type="button" onclick="deletePinDigit()" class="h-11 rounded-xl bg-charcoal-800 text-sm text-neutral-300 flex items-center justify-center"><i class="ph ph-backspace"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST SHELF -->
+  <div id="toast-shelf" class="fixed bottom-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- ==================== LOGIKA JS TERPADU ==================== -->
+  <script>
+    let currentRole = 'Cashier';
+    let currentView = 'pos';
+    let currentOrderType = 'Dine In';
+    let currentCategory = 'All';
+    let currentSearch = '';
+    let cart = [];
+    let discountAmount = 0;
+    let currentPaymentMethod = 'Cash';
+    let isSidebarCollapsed = false;
+    let pendingRestrictedView = null;
+    let pinBuffer = '';
+
+    let currentAdminPin = localStorage.getItem('hven_admin_pin') || '7788';
+    let staffAccounts = JSON.parse(localStorage.getItem('hven_staff_accounts')) || [
+      { id: 'randy', name: 'Randy', role: 'Barista / Floor', pin: '1234', access: 'Kasir Only', active: true },
+      { id: 'anto', name: 'Anto', role: 'Cashier / Admin', pin: '1234', access: 'Kasir Only', active: true },
+      { id: 'gala', name: 'Gala', role: 'Kitchen Head', pin: '1234', access: 'Kasir Only', active: true },
+      { id: 'kukuh', name: 'Kukuh', role: 'Floor & Support', pin: '1234', access: 'Kasir Only', active: true }
+    ];
+    let accountAuditLogs = JSON.parse(localStorage.getItem('hven_account_audit_logs')) || [];
+
+    let products = JSON.parse(localStorage.getItem('hven_products')) || [
+      { id: 'm1', name: 'Sexy Lady', category: 'Mocktail', sku: 'HVN-M01', price: 25000, cogs: 7100, stock: 45, icon: '🍸', available: true },
+      { id: 'm2', name: 'Party Plate', category: 'Food & Snacks', sku: 'HVN-F01', price: 30000, cogs: 15543, stock: 25, icon: '🍟', available: true },
+      { id: 'm3', name: 'Latte Ice', category: 'Coffee', sku: 'HVN-C01', price: 25000, cogs: 7650, stock: 60, icon: '☕', available: true },
+      { id: 'm4', name: 'Nasi Goreng Kara', category: 'Food & Snacks', sku: 'HVN-F02', price: 25000, cogs: 7920, stock: 35, icon: '🍳', available: true },
+      { id: 'm5', name: 'Teh puncak Jamus', category: 'Tea & Non-Coffee', sku: 'HVN-T02', price: 15000, cogs: 270, stock: 60, icon: '🍵', available: true },
+      { id: 'm6', name: 'Americano', category: 'Coffee', sku: 'HVN-C02', price: 18000, cogs: 5200, stock: 80, icon: '☕', available: true }
+    ];
+
+    let logPemasukan = JSON.parse(localStorage.getItem('hven_pemasukan')) || [
+      { id: 'inc-01', date: '2026-08-15', category: 'Sewa Tempat', desc: 'DP Event XL', amount: 1890000 }
+    ];
+
+    let incidentLogs = JSON.parse(localStorage.getItem('hven_incidents')) || [];
+    let tutupBukuRecords = JSON.parse(localStorage.getItem('hven_tutup_buku')) || [
+      { period: '2026-08', startDate: '2026-08-07', endDate: '2026-09-07', income: 47933000, expense: 26051300, cogs: 13174636, profit: 8707064, status: 'Selesai', pic: 'Admin HVEN' }
+    ];
+    let expenses = JSON.parse(localStorage.getItem('hven_expenses')) || [];
+    let inventory = JSON.parse(localStorage.getItem('hven_inventory')) || [
+      { id: 'inv1', name: 'Biji Kopi House Blend', sku: 'ING-01', stock: 12.5, minStock: 3.0, cost: 240000, unit: 'kg' },
+      { id: 'inv2', name: 'Susu Segar Diamond UHT', sku: 'ING-02', stock: 24.0, minStock: 6.0, cost: 18500, unit: 'Liter' }
+    ];
+
+    let orders = JSON.parse(localStorage.getItem('hven_orders')) || [];
+    let recipeLogs = JSON.parse(localStorage.getItem('hven_recipe_logs')) || [];
+    let kdsTickets = JSON.parse(localStorage.getItem('hven_kds_tickets')) || [];
+    let attendanceLogs = JSON.parse(localStorage.getItem('hven_attendance')) || [];
+    let botNotifications = JSON.parse(localStorage.getItem('hven_bot_notifs')) || [];
+
+    let shiftState = { openingCash: 500000, cashSales: 0, nonCashSales: 0 };
+    const formatIDR = (val) => 'Rp ' + Number(val || 0).toLocaleString('id-ID');
+
+    function switchView(viewId) {
+      const restrictedViews = ['dashman', 'dashboard', 'expenses', 'pemasukan', 'tutupbuku', 'menuengineering', 'staffmgmt'];
+      if (restrictedViews.includes(viewId) && currentRole !== 'Owner') {
+        pendingRestrictedView = viewId;
+        openPinModal();
+        return;
+      }
+
+      currentView = viewId;
+      document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-item').forEach(el => {
+        el.classList.remove('bg-amber-600/20', 'text-amber-300', 'border', 'border-amber-500/30', 'text-white');
+        el.classList.add('text-neutral-400');
+      });
+
+      const activeNavBtn = document.getElementById('nav-' + viewId);
+      if (activeNavBtn) {
+        activeNavBtn.classList.add('bg-amber-600/20', 'text-amber-300', 'border', 'border-amber-500/30', 'text-white');
+        activeNavBtn.classList.remove('text-neutral-400');
+      }
+
+      const targetSec = document.getElementById('view-' + viewId);
+      if (targetSec) targetSec.classList.remove('hidden');
+
+      if (viewId === 'pos') renderPOSCatalog();
+      if (viewId === 'pemasukan') renderPemasukanTable();
+      if (viewId === 'tutupbuku') renderTutupBukuTable();
+      if (viewId === 'insiden') renderIncidentTable();
+      if (viewId === 'expenses') renderExpensesTable();
+      if (viewId === 'staffmgmt') { renderStaffManagementTable(); renderAccountAuditLogs(); }
+      if (viewId === 'products') renderProductManagementTable();
+      if (viewId === 'inventory') renderInventoryTable();
+    }
+
+    function toggleSidebarCollapse() {
+      isSidebarCollapsed = !isSidebarCollapsed;
+      const s = document.getElementById('app-sidebar');
+      const texts = document.querySelectorAll('.sidebar-text');
+      if (isSidebarCollapsed) {
+        s.classList.remove('w-64'); s.classList.add('w-20');
+        texts.forEach(t => t.classList.add('hidden'));
+      } else {
+        s.classList.remove('w-20'); s.classList.add('w-64');
+        texts.forEach(t => t.classList.remove('hidden'));
+      }
+    }
+
+    function openPinModal() {
+      pinBuffer = '';
+      updatePinDotsUI();
+      document.getElementById('pin-error-text').innerText = '';
+      document.getElementById('modal-pin-auth').classList.remove('hidden');
+    }
+
+    function closePinModal() {
+      pinBuffer = '';
+      document.getElementById('modal-pin-auth').classList.add('hidden');
+      pendingRestrictedView = null;
+    }
+
+    function handlePinInput(d) {
+      if (pinBuffer.length < 4) {
+        pinBuffer += d;
+        updatePinDotsUI();
+        if (pinBuffer.length === 4) setTimeout(verifyPinCode, 150);
+      }
+    }
+
+    function deletePinDigit() {
+      if (pinBuffer.length > 0) { pinBuffer = pinBuffer.slice(0, -1); updatePinDotsUI(); }
+    }
+
+    function clearPin() { pinBuffer = ''; updatePinDotsUI(); }
+
+    function updatePinDotsUI() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`pindot-${i}`);
+        if (dot) {
+          dot.className = i < pinBuffer.length ? "w-3.5 h-3.5 rounded-full bg-amber-400 border-2 border-amber-300 scale-110 transition shadow" : "w-3.5 h-3.5 rounded-full border-2 border-neutral-600 transition";
+        }
+      }
+    }
+
+    function verifyPinCode() {
+      if (pinBuffer === currentAdminPin) {
+        currentRole = 'Owner';
+        updateRoleBadgeUI();
+        closePinModal();
+        showToast('Otorisasi Admin Berhasil!', 'success');
+        if (pendingRestrictedView) {
+          switchView(pendingRestrictedView);
+          pendingRestrictedView = null;
+        }
+      } else {
+        document.getElementById('pin-error-text').innerText = 'PIN Admin salah!';
+        setTimeout(() => clearPin(), 600);
+      }
+    }
+
+    function updateRoleBadgeUI() {
+      const nameEl = document.getElementById('user-name');
+      const badgeEl = document.getElementById('user-role-badge');
+      const userLockIcon = document.getElementById('user-lock-icon');
+
+      if (currentRole === 'Owner') {
+        if (nameEl) nameEl.innerText = 'Bagas (Owner)';
+        if (badgeEl) { badgeEl.innerText = 'Mode Admin / Owner'; badgeEl.className = 'text-[10px] text-emerald-400 font-bold mt-0.5'; }
+        if (userLockIcon) userLockIcon.className = 'ph ph-lock-key-open text-emerald-400 text-base';
+      }
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-shelf');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `px-3.5 py-2.5 rounded-xl border text-xs font-semibold shadow-2xl flex items-center space-x-2 transition-all duration-300 ${type === 'success' ? 'bg-emerald-950 border-emerald-700 text-emerald-100' : 'bg-charcoal-900 border-neutral-700 text-white'}`;
+      toast.innerHTML = `<i class="${type === 'success' ? 'ph ph-check-circle text-emerald-400' : 'ph ph-info text-amber-400'} text-base"></i><span>${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
+
+    setInterval(() => {
+      const clock = document.getElementById('live-clock');
+      if (clock) clock.innerText = new Date().toLocaleTimeString('id-ID');
+    }, 1000);
+
+    window.onload = function() {
+      switchView('pos');
+    };
+  </script>
+</body>
+</html>

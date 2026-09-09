@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "HVEN Space POS",
+      "hasCanvas": false,
+      "bodyTextLen": 1876,
+      "bodyTextHash": "2cf86f6a6ec265be7ef8e412f89ad89247c2e3b5f359e8bd7dfff90f5e374754",
+      "bodyTextPrefix": "H HVEN SPACE Cafe & Experience Hub KASIR POS Kasir F1 Order List",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "HVEN Space POS",
+      "hasCanvas": false,
+      "bodyTextLen": 1544,
+      "bodyTextHash": "75906d2b4b06f301a9ef15a297af437ef5a51905678bf6278f7187b4ffac84eb",
+      "bodyTextPrefix": "POS Kasir HVEN 1 Semua Mocktail Food Coffee Tea Water Ready Sexy",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
